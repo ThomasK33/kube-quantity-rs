@@ -18,12 +18,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ParseQuantityError {
+    /// The string is empty
     #[error("empty string")]
     EmptyString,
 
+    /// The string is not a valid quantity
     #[error("parsing failed")]
     ParsingFailed(#[from] nom::Err<nom::error::Error<String>>),
 
+    /// The string is not a valid quantity
     #[error("decimal parsing failed")]
     DecimalParsingFailed,
 }
@@ -171,12 +174,12 @@ impl Add for ParsedQuantity {
 
         // If we are down to bytes, there won't be any decimal places
         // thus we can round the value to the nearest integer
-        if lhs.scale == Scale::One {
-            lhs.value = lhs.value.round_dp(0);
-        }
-        if rhs.scale == Scale::One {
-            rhs.value = rhs.value.round_dp(0);
-        }
+        // if lhs.scale == Scale::One {
+        //     lhs.value = lhs.value.round_dp(0);
+        // }
+        // if rhs.scale == Scale::One {
+        //     rhs.value = rhs.value.round_dp(0);
+        // }
 
         // Add the normalized values
         let value = lhs.value.add(rhs.value).normalize();
@@ -198,8 +201,14 @@ impl Add for ParsedQuantity {
 }
 
 impl ParsedQuantity {
-    pub fn to_precision_string(self, precision: u32) -> String {
-        todo!("Precision string not yet implemented")
+    /// Returns the value of the quantity as a string with a given precision after
+    /// the decimal point.
+    pub fn to_string_with_precision(&self, precision: u32) -> String {
+        format!(
+            "{}{}",
+            self.value.round_dp(precision).normalize(),
+            scale_format_to_string(&self.scale, &self.format)
+        )
     }
 }
 
@@ -276,6 +285,7 @@ impl TryFrom<i32> for Scale {
 
 // --- Functions ---
 
+/// Returns the string representation of the scale and format
 fn scale_format_to_string(scale: &Scale, format: &Format) -> String {
     match format {
         Format::BinarySI => match scale {
@@ -304,6 +314,8 @@ fn scale_format_to_string(scale: &Scale, format: &Format) -> String {
 
 // --- Parsers ---
 
+/// Parses a signed number from a string and returns the remaining input and the
+/// parsed quantity
 pub(crate) fn parse_quantity_string(
     input: &str,
 ) -> Result<(&str, ParsedQuantity), ParseQuantityError> {
@@ -341,6 +353,8 @@ pub(crate) fn parse_quantity_string(
     ))
 }
 
+/// Parses a signed number from a string and returns the remaining input and the
+/// signed number
 fn parse_signed_number(input: &str) -> IResult<&str, f64> {
     // Default to true
     let (input, positive) =
@@ -351,6 +365,7 @@ fn parse_signed_number(input: &str) -> IResult<&str, f64> {
     Ok((input, if positive { num } else { -num }))
 }
 
+/// Parses the suffix and returns the remaining input and the format and scale
 fn parse_suffix(input: &str) -> IResult<&str, (Format, Scale)> {
     // If the input is empty, then in a previous step we have already parsed the number
     // and we can classify this as a decimal exponent, yet one is going to
@@ -400,6 +415,7 @@ fn parse_suffix(input: &str) -> IResult<&str, (Format, Scale)> {
     ))
 }
 
+/// Parses a sign from a string and returns the remaining input and the sign
 fn parse_sign(input: &str) -> IResult<&str, bool> {
     let (input, sign) = one_of("+-")(input)?;
     Ok((input, sign == '+'))
@@ -592,7 +608,7 @@ mod tests {
 
         let q3 = q1 + q2;
 
-        assert_eq!(q3.to_string(), "11024");
+        assert_eq!(q3.to_string_with_precision(0), "11024");
     }
 
     #[test]
@@ -642,7 +658,7 @@ mod tests {
 
         let q3 = q1 + q2;
 
-        assert_eq!(q3.to_string(), "2.0240001k");
+        assert_eq!(q3.to_string_with_precision(3), "2.024k");
     }
 
     #[test]
