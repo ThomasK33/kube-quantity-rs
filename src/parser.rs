@@ -1,4 +1,7 @@
-use std::{fmt::Display, ops::Add};
+use std::{
+    fmt::Display,
+    ops::{Add, Mul},
+};
 
 use nom::{
     branch::alt,
@@ -20,6 +23,9 @@ pub enum ParseQuantityError {
 
     #[error("parsing failed")]
     ParsingFailed(#[from] nom::Err<nom::error::Error<String>>),
+
+    #[error("decimal parsing failed")]
+    DecimalParsingFailed,
 }
 
 // --- Types ---
@@ -41,7 +47,7 @@ pub struct ParsedQuantity {
 
 impl Display for ParsedQuantity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.string_representation,)
+        write!(f, "{}", self.string_representation)
     }
 }
 
@@ -49,7 +55,151 @@ impl Add for ParsedQuantity {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        todo!()
+        let mut lhs = self;
+        let mut rhs = rhs;
+
+        // Bring both quantities to the same format
+        // - If the formats are different, use the lhs format as output format and
+        //   multiply the rhs value by the format multiplier
+
+        match (&lhs.format, &rhs.format) {
+            (Format::BinarySI, Format::BinarySI) => {}
+            (Format::BinarySI, Format::DecimalExponent) => {
+                let value = (rhs.value)
+                    .mul(
+                        Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
+                            .unwrap_or_default()
+                            .normalize(),
+                    )
+                    .normalize();
+
+                rhs.value = value;
+                rhs.format = Format::BinarySI;
+                rhs.string_representation = format!(
+                    "{}{}",
+                    rhs.value,
+                    scale_format_to_string(&rhs.scale, &rhs.format)
+                );
+            }
+            (Format::BinarySI, Format::DecimalSI) => {
+                let value = rhs
+                    .value
+                    .mul(
+                        Decimal::from_f32((1000_f32 / 1024_f32).powi(rhs.scale.clone().into()))
+                            .unwrap_or_default()
+                            .normalize(),
+                    )
+                    .normalize();
+
+                rhs.value = value;
+                rhs.format = Format::BinarySI;
+                rhs.string_representation = format!(
+                    "{}{}",
+                    rhs.value,
+                    scale_format_to_string(&rhs.scale, &rhs.format)
+                );
+            }
+            (Format::DecimalExponent, Format::BinarySI) => todo!(),
+            (Format::DecimalExponent, Format::DecimalExponent) => {}
+            (Format::DecimalExponent, Format::DecimalSI) => todo!(),
+            (Format::DecimalSI, Format::BinarySI) => {
+                let value = rhs
+                    .value
+                    .mul(
+                        Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
+                            .unwrap_or_default()
+                            .normalize(),
+                    )
+                    // .round_dp(6)
+                    .normalize();
+
+                rhs.value = value;
+                rhs.format = Format::DecimalSI;
+                rhs.string_representation = format!(
+                    "{}{}",
+                    rhs.value,
+                    scale_format_to_string(&rhs.scale, &rhs.format)
+                );
+            }
+            (Format::DecimalSI, Format::DecimalExponent) => {
+                rhs.format = Format::DecimalSI;
+                rhs.string_representation = format!(
+                    "{}{}",
+                    rhs.value,
+                    scale_format_to_string(&rhs.scale, &rhs.format)
+                );
+            }
+            (Format::DecimalSI, Format::DecimalSI) => {}
+        };
+
+        // Bring both scales to the same ones
+        // - If the scales are different, use the smaller scale as output scale
+
+        let rhs_scale: i32 = (&rhs.scale).into();
+        let lhs_scale: i32 = (&lhs.scale).into();
+        let multiplier = rhs_scale.abs_diff(lhs_scale).to_i32().unwrap_or_default();
+
+        match lhs_scale.cmp(&rhs_scale) {
+            std::cmp::Ordering::Less => {
+                // Bring the rhs to the lower scale (lhs)
+                rhs.value = rhs.value.mul(
+                    Decimal::from_f32(match &rhs.format {
+                        Format::BinarySI => 1024_f32.powi(multiplier),
+                        Format::DecimalExponent => 1000_f32.powi(multiplier),
+                        Format::DecimalSI => 1000_f32.powi(multiplier),
+                    })
+                    .unwrap_or_default(),
+                );
+                rhs.scale = lhs.scale.clone();
+            }
+            std::cmp::Ordering::Equal => {
+                // If equal do nothing
+            }
+            std::cmp::Ordering::Greater => {
+                // Bring the lhs to the lower scale (rhs)
+                lhs.value = lhs.value.mul(
+                    Decimal::from_f32(match &lhs.format {
+                        Format::BinarySI => 1024_f32.powi(multiplier),
+                        Format::DecimalExponent => 1000_f32.powi(multiplier),
+                        Format::DecimalSI => 1000_f32.powi(multiplier),
+                    })
+                    .unwrap_or_default(),
+                );
+                lhs.scale = rhs.scale.clone();
+            }
+        }
+
+        // If we are down to bytes, there won't be any decimal places
+        // thus we can round the value to the nearest integer
+        if lhs.scale == Scale::One {
+            lhs.value = lhs.value.round_dp(0);
+        }
+        if rhs.scale == Scale::One {
+            rhs.value = rhs.value.round_dp(0);
+        }
+
+        // Add the normalized values
+        let value = lhs.value.add(rhs.value).normalize();
+
+        // Set the string_representation for the output
+        let string_representation = format!(
+            "{}{}",
+            value,
+            scale_format_to_string(&lhs.scale, &lhs.format)
+        );
+
+        Self {
+            value,
+            scale: lhs.scale,
+            format: lhs.format,
+            string_representation,
+        }
+    }
+}
+
+impl ParsedQuantity {
+    pub fn to_precision_string(self, precision: u32) -> String {
+        todo!("Precision string not yet implemented")
     }
 }
 
@@ -57,18 +207,22 @@ impl Add for ParsedQuantity {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Format {
-    BinarySI,        // e.g., 12Mi (12 * 2^20)
-    DecimalExponent, // e.g., 12e6
-    DecimalSI,       // e.g., 12M  (12 * 10^6)
+    /// e.g., 12Mi = (12 * 2^20) = (12 * 1024^2)
+    BinarySI,
+    /// e.g., 12e6 = (12 * 10^6)
+    DecimalExponent,
+    /// e.g., 12M = (12 * 10^6) = (12 * 1000^2)
+    DecimalSI,
 }
 
-// - Scale
+// - Scale -
 
 /// Scale is used for getting and setting the base-10 scaled value. Base-2
 /// scales are omitted for mathematical simplicity.
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Default)]
 enum Scale {
     Milli,
+    #[default]
     One,
     Kilo,
     Mega,
@@ -80,18 +234,42 @@ enum Scale {
 
 // Returns a tuple indicating wether the exponent is positive and the exponent
 // itself
-impl From<Scale> for (bool, u32) {
+impl From<Scale> for i32 {
     fn from(value: Scale) -> Self {
-        // TODO: https://en.wikipedia.org/wiki/Kilobyte
+        (&value).into()
+    }
+}
+
+impl From<&Scale> for i32 {
+    fn from(value: &Scale) -> Self {
+        // https://en.wikipedia.org/wiki/Kilobyte
         match value {
-            Scale::Milli => (false, 1),
-            Scale::One => (true, 0),
-            Scale::Kilo => (true, 1),
-            Scale::Mega => (true, 2),
-            Scale::Giga => (true, 3),
-            Scale::Tera => (true, 4),
-            Scale::Peta => (true, 5),
-            Scale::Exa => (true, 6),
+            Scale::Milli => -1,
+            Scale::One => 0,
+            Scale::Kilo => 1,
+            Scale::Mega => 2,
+            Scale::Giga => 3,
+            Scale::Tera => 4,
+            Scale::Peta => 5,
+            Scale::Exa => 6,
+        }
+    }
+}
+
+impl TryFrom<i32> for Scale {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            -1 => Ok(Scale::Milli),
+            0 => Ok(Scale::One),
+            1 => Ok(Scale::Kilo),
+            2 => Ok(Scale::Mega),
+            3 => Ok(Scale::Giga),
+            4 => Ok(Scale::Tera),
+            5 => Ok(Scale::Peta),
+            6 => Ok(Scale::Exa),
+            _ => Err(()),
         }
     }
 }
@@ -104,7 +282,7 @@ fn scale_format_to_string(scale: &Scale, format: &Format) -> String {
             Scale::Milli => "".to_owned(),
             Scale::One => "".to_owned(),
             Scale::Kilo => "Ki".to_owned(),
-            Scale::Mega => "MI".to_owned(),
+            Scale::Mega => "Mi".to_owned(),
             Scale::Giga => "Gi".to_owned(),
             Scale::Tera => "Ti".to_owned(),
             Scale::Peta => "Pi".to_owned(),
@@ -133,7 +311,7 @@ pub(crate) fn parse_quantity_string(
         return Err(ParseQuantityError::EmptyString);
     }
 
-    let original_input = input.to_owned();
+    let string_representation = input.to_owned();
 
     let error_mapper = |err: nom::Err<nom::error::Error<&str>>| match err {
         nom::Err::Incomplete(err) => nom::Err::Incomplete(err),
@@ -156,8 +334,9 @@ pub(crate) fn parse_quantity_string(
         ParsedQuantity {
             format,
             scale,
-            string_representation: original_input,
-            value: Decimal::from_f64(signed_number).unwrap_or_default(),
+            string_representation,
+            value: Decimal::from_f64(signed_number)
+                .ok_or(ParseQuantityError::DecimalParsingFailed)?,
         },
     ))
 }
@@ -307,12 +486,172 @@ mod tests {
     }
 
     #[test]
-    fn test_quantity_addition() {
+    fn test_quantity_addition_binary_si() {
         let q1 = parse_quantity_string("1Ki").unwrap().1;
         let q2 = parse_quantity_string("2Ki").unwrap().1;
 
         let q3 = q1 + q2;
 
         assert_eq!(q3.to_string(), "3Ki");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_2() {
+        let q1 = parse_quantity_string("1.5Mi").unwrap().1;
+        let q2 = parse_quantity_string("2Mi").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "3.5Mi");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_mixed_scales() {
+        let q1 = parse_quantity_string("1Ki").unwrap().1;
+        let q2 = parse_quantity_string("2Mi").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "2049Ki");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_decimal_exponent() {
+        let q1 = parse_quantity_string("12Mi").unwrap().1;
+        let q2 = parse_quantity_string("12e6").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "24582912");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_decimal_si() {
+        let q1 = parse_quantity_string("12Mi").unwrap().1;
+        let q2 = parse_quantity_string("12M").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "23.4440916Mi");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_decimal_si_2() {
+        let q1 = parse_quantity_string("12Ki").unwrap().1;
+        let q2 = parse_quantity_string("1000").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "13288");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_si_milli_addition() {
+        let q1 = parse_quantity_string("100m").unwrap().1;
+        let q2 = parse_quantity_string("200m").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "300m");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_si_milli_addition_2() {
+        let q1 = parse_quantity_string("100m").unwrap().1;
+        let q2 = parse_quantity_string("1").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "1100m");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_exponent() {
+        let q1 = parse_quantity_string("10e3").unwrap().1;
+        let q2 = parse_quantity_string("10e3").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "20000");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_exponent_2() {
+        let q1 = parse_quantity_string("10e4").unwrap().1;
+        let q2 = parse_quantity_string("10e3").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "110000");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_exponent_binary_si() {
+        let q1 = parse_quantity_string("10e3").unwrap().1;
+        let q2 = parse_quantity_string("1Ki").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "11024");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_exponent_decimal_si() {
+        let q1 = parse_quantity_string("10e3").unwrap().1;
+        let q2 = parse_quantity_string("1k").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "11000");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_exponent_decimal_si_2() {
+        let q1 = parse_quantity_string("10e2").unwrap().1;
+        let q2 = parse_quantity_string("1k").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "2000");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_si() {
+        let q1 = parse_quantity_string("1M").unwrap().1;
+        let q2 = parse_quantity_string("2M").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "3M");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_si_2() {
+        let q1 = parse_quantity_string("1k").unwrap().1;
+        let q2 = parse_quantity_string("2M").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "2001k");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_si_binary_si() {
+        let q1 = parse_quantity_string("1k").unwrap().1;
+        let q2 = parse_quantity_string("1Ki").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "2.0240001k");
+    }
+
+    #[test]
+    fn test_quantity_addition_decimal_si_binary_si_2() {
+        let q1 = parse_quantity_string("1M").unwrap().1;
+        let q2 = parse_quantity_string("1Mi").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "2.0485761M");
     }
 }
