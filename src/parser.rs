@@ -22,11 +22,11 @@ pub enum ParseQuantityError {
     #[error("empty string")]
     EmptyString,
 
-    /// The string is not a valid quantity
-    #[error("parsing failed")]
+    /// The string is not a valid quantity format
+    #[error("quantity parsing failed")]
     ParsingFailed(#[from] nom::Err<nom::error::Error<String>>),
 
-    /// The string is not a valid quantity
+    /// The numeric value is not a valid decimal number
     #[error("decimal parsing failed")]
     DecimalParsingFailed,
 }
@@ -67,23 +67,23 @@ impl Add for ParsedQuantity {
 
         match (&lhs.format, &rhs.format) {
             (Format::BinarySI, Format::BinarySI) => {}
-            (Format::BinarySI, Format::DecimalExponent) => {
-                let value = (rhs.value)
-                    .mul(
-                        Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
-                            .unwrap_or_default()
-                            .normalize(),
-                    )
-                    .normalize();
+            // (Format::BinarySI, Format::DecimalExponent) => {
+            //     let value = (rhs.value)
+            //         .mul(
+            //             Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
+            //                 .unwrap_or_default()
+            //                 .normalize(),
+            //         )
+            //         .normalize();
 
-                rhs.value = value;
-                rhs.format = Format::BinarySI;
-                rhs.string_representation = format!(
-                    "{}{}",
-                    rhs.value,
-                    scale_format_to_string(&rhs.scale, &rhs.format)
-                );
-            }
+            //     rhs.value = value;
+            //     rhs.format = Format::BinarySI;
+            //     rhs.string_representation = format!(
+            //         "{}{}",
+            //         rhs.value,
+            //         scale_format_to_string(&rhs.scale, &rhs.format)
+            //     );
+            // }
             (Format::BinarySI, Format::DecimalSI) => {
                 let value = rhs
                     .value
@@ -102,9 +102,9 @@ impl Add for ParsedQuantity {
                     scale_format_to_string(&rhs.scale, &rhs.format)
                 );
             }
-            (Format::DecimalExponent, Format::BinarySI) => todo!(),
-            (Format::DecimalExponent, Format::DecimalExponent) => {}
-            (Format::DecimalExponent, Format::DecimalSI) => todo!(),
+            // (Format::DecimalExponent, Format::BinarySI) => todo!(),
+            // (Format::DecimalExponent, Format::DecimalExponent) => {}
+            // (Format::DecimalExponent, Format::DecimalSI) => todo!(),
             (Format::DecimalSI, Format::BinarySI) => {
                 let value = rhs
                     .value
@@ -124,14 +124,14 @@ impl Add for ParsedQuantity {
                     scale_format_to_string(&rhs.scale, &rhs.format)
                 );
             }
-            (Format::DecimalSI, Format::DecimalExponent) => {
-                rhs.format = Format::DecimalSI;
-                rhs.string_representation = format!(
-                    "{}{}",
-                    rhs.value,
-                    scale_format_to_string(&rhs.scale, &rhs.format)
-                );
-            }
+            // (Format::DecimalSI, Format::DecimalExponent) => {
+            //     rhs.format = Format::DecimalSI;
+            //     rhs.string_representation = format!(
+            //         "{}{}",
+            //         rhs.value,
+            //         scale_format_to_string(&rhs.scale, &rhs.format)
+            //     );
+            // }
             (Format::DecimalSI, Format::DecimalSI) => {}
         };
 
@@ -148,7 +148,7 @@ impl Add for ParsedQuantity {
                 rhs.value = rhs.value.mul(
                     Decimal::from_f32(match &rhs.format {
                         Format::BinarySI => 1024_f32.powi(multiplier),
-                        Format::DecimalExponent => 1000_f32.powi(multiplier),
+                        // Format::DecimalExponent => 1000_f32.powi(multiplier),
                         Format::DecimalSI => 1000_f32.powi(multiplier),
                     })
                     .unwrap_or_default(),
@@ -163,7 +163,7 @@ impl Add for ParsedQuantity {
                 lhs.value = lhs.value.mul(
                     Decimal::from_f32(match &lhs.format {
                         Format::BinarySI => 1024_f32.powi(multiplier),
-                        Format::DecimalExponent => 1000_f32.powi(multiplier),
+                        // Format::DecimalExponent => 1000_f32.powi(multiplier),
                         Format::DecimalSI => 1000_f32.powi(multiplier),
                     })
                     .unwrap_or_default(),
@@ -219,7 +219,7 @@ pub enum Format {
     /// e.g., 12Mi = (12 * 2^20) = (12 * 1024^2)
     BinarySI,
     /// e.g., 12e6 = (12 * 10^6)
-    DecimalExponent,
+    // DecimalExponent,
     /// e.g., 12M = (12 * 10^6) = (12 * 1000^2)
     DecimalSI,
 }
@@ -308,7 +308,7 @@ fn scale_format_to_string(scale: &Scale, format: &Format) -> String {
             Scale::Peta => "P".to_owned(),
             Scale::Exa => "E".to_owned(),
         },
-        Format::DecimalExponent => "e".to_owned(),
+        // Format::DecimalExponent => "e".to_owned(),
     }
 }
 
