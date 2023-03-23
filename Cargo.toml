@@ -6,7 +6,6 @@ authors = ["Thomas Kosiewski <thoma471@googlemail.com>"]
 description = "kube_quantity is a library adding arithmetic operations to the Quantity type from the k8s-openapi crate."
 edition = "2021"
 license = "Apache-2.0"
-license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/ThomasK33/kube-quantity-rs"
 
