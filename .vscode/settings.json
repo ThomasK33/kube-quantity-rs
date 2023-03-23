@@ -6,6 +6,7 @@
 		"milli",
 		"powi",
 		"sarif",
+		"struct",
 		"thiserror"
 	]
 }

@@ -21,7 +21,7 @@ kube_quantity = "0.1.0"
 
 ## Upgrading
 
-Please check the [CHANGELOG](https://github.com/ThomasK33/kube-quantity-rs/CHANGELOG.md) when upgrading.
+Please check the [CHANGELOG](https://github.com/ThomasK33/kube-quantity-rs/blob/main/CHANGELOG.md) when upgrading.
 
 ## Usage
 
@@ -95,4 +95,4 @@ assert_eq!(q1.0, "9500M");
 
 ## License
 
-Apache 2.0 licensed. See [LICENSE](https://github.com/ThomasK33/kube-quantity-rs/LICENSE) for details.
+Apache 2.0 licensed. See [LICENSE](https://github.com/ThomasK33/kube-quantity-rs/blob/main/LICENSE) for details.
