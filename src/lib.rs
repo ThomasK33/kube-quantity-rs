@@ -1,12 +1,17 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
+mod format;
 mod parser;
+mod quantity;
+mod scale;
+mod utils;
 
 use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 use parser::parse_quantity_string;
 
-pub use parser::{ParseQuantityError, ParsedQuantity};
+pub use parser::ParseQuantityError;
+pub use quantity::ParsedQuantity;
 
 impl TryFrom<Quantity> for ParsedQuantity {
     type Error = ParseQuantityError;
@@ -37,7 +42,7 @@ mod tests {
     use crate::{ParseQuantityError, ParsedQuantity};
 
     #[test]
-    fn test_quantity_addition_external() {
+    fn test_quantity_addition() {
         let q1: Result<ParsedQuantity, _> = Quantity("1Ki".to_string()).try_into();
         let q2: Result<ParsedQuantity, _> = Quantity("1Ki".to_string()).try_into();
 
@@ -52,7 +57,7 @@ mod tests {
     }
 
     #[test]
-    fn test_quantity_addition_external_2() {
+    fn test_quantity_addition_2() {
         let q1: Result<ParsedQuantity, _> = Quantity("1".to_string()).try_into();
         let q2: Result<ParsedQuantity, _> = Quantity("500m".to_string()).try_into();
 
@@ -67,7 +72,23 @@ mod tests {
     }
 
     #[test]
-    fn test_quantity_subtraction_external_2() {
+    fn test_quantity_addition_assign() {
+        let q1: Result<ParsedQuantity, _> = Quantity("5M".to_string()).try_into();
+        let q2: Result<ParsedQuantity, _> = Quantity("7M".to_string()).try_into();
+
+        assert!(q1.is_ok());
+        assert!(q2.is_ok());
+
+        let mut q1 = q1.unwrap();
+        q1 += q2.unwrap();
+
+        let q1: Quantity = q1.into();
+
+        assert_eq!(q1.0, "12M");
+    }
+
+    #[test]
+    fn test_quantity_subtraction() {
         let q1: Result<ParsedQuantity, _> = Quantity("1".to_string()).try_into();
         let q2: Result<ParsedQuantity, _> = Quantity("500m".to_string()).try_into();
 
@@ -79,6 +100,38 @@ mod tests {
         let q3: Quantity = q3.into();
 
         assert_eq!(q3.0, "500m");
+    }
+
+    #[test]
+    fn test_quantity_subtraction_assign() {
+        let q1: Result<ParsedQuantity, _> = Quantity("10Gi".to_string()).try_into();
+        let q2: Result<ParsedQuantity, _> = Quantity("500Mi".to_string()).try_into();
+
+        assert!(q1.is_ok());
+        assert!(q2.is_ok());
+
+        let mut q1 = q1.unwrap();
+        q1 -= q2.unwrap();
+
+        let q1: Quantity = q1.into();
+
+        assert_eq!(q1.0, "9740Mi");
+    }
+
+    #[test]
+    fn test_quantity_subtraction_assign_2() {
+        let q1: Result<ParsedQuantity, _> = Quantity("10G".to_string()).try_into();
+        let q2: Result<ParsedQuantity, _> = Quantity("500M".to_string()).try_into();
+
+        assert!(q1.is_ok());
+        assert!(q2.is_ok());
+
+        let mut q1 = q1.unwrap();
+        q1 -= q2.unwrap();
+
+        let q1: Quantity = q1.into();
+
+        assert_eq!(q1.0, "9500M");
     }
 
     #[test]
