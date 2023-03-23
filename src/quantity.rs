@@ -9,6 +9,20 @@ use crate::{format::Format, scale::Scale, utils::scale_format_to_string};
 
 // - Parsed Quantity -
 
+/// ParsedQuantity represents a parsed Kubernetes quantity.
+///
+/// ```rust
+/// use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+/// use kube_quantity::{ParseQuantityError, ParsedQuantity};
+///
+/// // Kubernetes quantity
+/// let k8s_quantity = Quantity("1Ki".to_string());
+///
+/// // Try parsing k8s quantity
+/// let quantity: Result<ParsedQuantity, ParseQuantityError> = k8s_quantity.try_into();
+///
+/// assert_eq!(quantity.unwrap().to_string(), "1Ki");
+/// ```
 #[derive(Debug, Clone)]
 pub struct ParsedQuantity {
     // The actual value of the quantity
@@ -121,17 +135,51 @@ impl SubAssign for ParsedQuantity {
 }
 
 impl ParsedQuantity {
-    /// Returns the value of the quantity as a string with a given precision after
-    /// the decimal point.
+    /// Returns the value of the quantity as a string with the specified number of
+    /// decimal points for fractional portion.
+    /// Additionally it performs normalization, i.e., strips any trailing zero's from a value and converts -0 to 0.
+    ///
+    /// When a number is halfway between two others, it is rounded toward the
+    /// nearest number that is away from zero. e.g. 6.4 -> 6, 6.5 -> 7, -6.5 -> -7
+    ///
+    /// ```rust
+    /// use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+    /// use kube_quantity::ParsedQuantity;
+    ///
+    /// let k_quantity: ParsedQuantity = Quantity("1k".to_string()).try_into().unwrap();
+    /// let ki_quantity: ParsedQuantity = Quantity("1Ki".to_string()).try_into().unwrap();
+    ///
+    /// let q3 = k_quantity + ki_quantity;
+    ///
+    /// assert_eq!(q3.to_string_with_precision(3), "2.024k");
+    /// assert_eq!(q3.to_string_with_precision(2), "2.02k");
+    /// assert_eq!(q3.to_string_with_precision(1), "2k");
+    /// assert_eq!(q3.to_string_with_precision(0), "2k");
+    /// ```
     pub fn to_string_with_precision(&self, precision: u32) -> String {
         format!(
             "{}{}",
-            self.value.round_dp(precision).normalize(),
+            self.value
+                .round_dp_with_strategy(precision, RoundingStrategy::MidpointAwayFromZero)
+                .normalize(),
             scale_format_to_string(&self.scale, &self.format)
         )
     }
 
     /// Returns the value of the quantity as an f64.
+    ///
+    /// ```rust
+    /// use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+    /// use kube_quantity::{ParseQuantityError, ParsedQuantity};
+    ///
+    /// // Kubernetes quantity
+    /// let k8s_quantity = Quantity("1Ki".to_string());
+    ///
+    /// // Try parsing k8s quantity
+    /// let quantity: Result<ParsedQuantity, ParseQuantityError> = k8s_quantity.try_into();
+    ///
+    /// assert_eq!(quantity.unwrap().to_bytes_f64(), Some(1024.0));
+    /// ```
     pub fn to_bytes_f64(&self) -> Option<f64> {
         let scale: i32 = (&self.scale).into();
 
@@ -139,8 +187,196 @@ impl ParsedQuantity {
             value
                 * match &self.format {
                     Format::BinarySI => 1024_f64.powi(scale),
-                    // Format::DecimalExponent => 1000_f64.powi(multiplier),
+                    // Format::DecimalExponent => 1000_f64.powi(scale),
                     Format::DecimalSI => 1000_f64.powi(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an f32.
+    pub fn to_bytes_f32(&self) -> Option<f32> {
+        let scale: i32 = (&self.scale).into();
+
+        self.value.to_f32().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_f32.powi(scale),
+                    // Format::DecimalExponent => 1000_f32.powi(scale),
+                    Format::DecimalSI => 1000_f32.powi(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an i128.
+    pub fn to_bytes_i128(&self) -> Option<i128> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_i128().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_i128.pow(scale),
+                    // Format::DecimalExponent => 1000_i128.pow(scale),
+                    Format::DecimalSI => 1000_i128.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an i64.
+    pub fn to_bytes_i64(&self) -> Option<i64> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_i64().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_i64.pow(scale),
+                    // Format::DecimalExponent => 1000_i64.pow(scale),
+                    Format::DecimalSI => 1000_i64.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an i32.
+    pub fn to_bytes_i32(&self) -> Option<i32> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_i32().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_i32.pow(scale),
+                    // Format::DecimalExponent => 1000_i32.pow(scale),
+                    Format::DecimalSI => 1000_i32.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an i16.
+    pub fn to_bytes_i16(&self) -> Option<i16> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_i16().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_i16.pow(scale),
+                    // Format::DecimalExponent => 1000_i16.pow(scale),
+                    Format::DecimalSI => 1000_i16.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an i8.
+    /// This will only work if the scale is 0.
+    pub fn to_bytes_i8(&self) -> Option<i8> {
+        let scale: i32 = (&self.scale).into();
+
+        if scale != 0 {
+            return None;
+        }
+
+        self.value.to_i8()
+    }
+
+    /// Returns the value of the quantity as an isize.
+    pub fn to_bytes_isize(&self) -> Option<isize> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_isize().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_isize.pow(scale),
+                    // Format::DecimalExponent => 1000_isize.pow(scale),
+                    Format::DecimalSI => 1000_isize.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an u128.
+    pub fn to_bytes_u128(&self) -> Option<u128> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_u128().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_u128.pow(scale),
+                    // Format::DecimalExponent => 1000_u128.pow(scale),
+                    Format::DecimalSI => 1000_u128.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an u64.
+    pub fn to_bytes_u64(&self) -> Option<u64> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_u64().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_u64.pow(scale),
+                    // Format::DecimalExponent => 1000_u64.pow(scale),
+                    Format::DecimalSI => 1000_u64.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an u32.
+    pub fn to_bytes_u32(&self) -> Option<u32> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_u32().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_u32.pow(scale),
+                    // Format::DecimalExponent => 1000_u32.pow(scale),
+                    Format::DecimalSI => 1000_u32.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an u16.
+    pub fn to_bytes_u16(&self) -> Option<u16> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_u16().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_u16.pow(scale),
+                    // Format::DecimalExponent => 1000_u16.pow(scale),
+                    Format::DecimalSI => 1000_u16.pow(scale),
+                }
+        })
+    }
+
+    /// Returns the value of the quantity as an u8.
+    /// This will only work if the scale is 0.
+    pub fn to_bytes_u8(&self) -> Option<u8> {
+        let scale: i32 = (&self.scale).into();
+
+        if scale != 0 {
+            return None;
+        }
+
+        self.value.to_u8()
+    }
+
+    /// Returns the value of the quantity as an usize.
+    pub fn to_bytes_usize(&self) -> Option<usize> {
+        let scale: i32 = (&self.scale).into();
+        let scale: u32 = scale.try_into().ok()?;
+
+        self.value.to_usize().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_usize.pow(scale),
+                    // Format::DecimalExponent => 1000_usize.pow(scale),
+                    Format::DecimalSI => 1000_usize.pow(scale),
                 }
         })
     }
@@ -184,7 +420,7 @@ fn normalize_formats(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
         // (Format::BinarySI, Format::DecimalExponent) => {
         //     let value = (rhs.value)
         //         .mul(
-        //             Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
+        //             Decimal::from_f32((1024_f32 / 1000_f32).pow(rhs.scale.clone().into()))
         //                 .unwrap_or_default()
         //                 .normalize(),
         //         )
