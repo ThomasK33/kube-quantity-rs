@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Mul},
+    ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
 
 use nom::{
@@ -43,17 +43,21 @@ pub struct ParsedQuantity {
     scale: Scale,
     // Used to indicate the format of the suffix used
     format: Format,
-
-    // The string representation of this quantity to avoid recalculation
-    string_representation: String,
 }
 
 impl Display for ParsedQuantity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.string_representation)
+        let string_representation = format!(
+            "{}{}",
+            self.value,
+            scale_format_to_string(&self.scale, &self.format)
+        );
+
+        write!(f, "{}", string_representation)
     }
 }
 
+// Standard operations on parsed quantities
 impl Add for ParsedQuantity {
     type Output = Self;
 
@@ -64,139 +68,81 @@ impl Add for ParsedQuantity {
         // Bring both quantities to the same format
         // - If the formats are different, use the lhs format as output format and
         //   multiply the rhs value by the format multiplier
-
-        match (&lhs.format, &rhs.format) {
-            (Format::BinarySI, Format::BinarySI) => {}
-            // (Format::BinarySI, Format::DecimalExponent) => {
-            //     let value = (rhs.value)
-            //         .mul(
-            //             Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
-            //                 .unwrap_or_default()
-            //                 .normalize(),
-            //         )
-            //         .normalize();
-
-            //     rhs.value = value;
-            //     rhs.format = Format::BinarySI;
-            //     rhs.string_representation = format!(
-            //         "{}{}",
-            //         rhs.value,
-            //         scale_format_to_string(&rhs.scale, &rhs.format)
-            //     );
-            // }
-            (Format::BinarySI, Format::DecimalSI) => {
-                let value = rhs
-                    .value
-                    .mul(
-                        Decimal::from_f32((1000_f32 / 1024_f32).powi(rhs.scale.clone().into()))
-                            .unwrap_or_default()
-                            .normalize(),
-                    )
-                    .normalize();
-
-                rhs.value = value;
-                rhs.format = Format::BinarySI;
-                rhs.string_representation = format!(
-                    "{}{}",
-                    rhs.value,
-                    scale_format_to_string(&rhs.scale, &rhs.format)
-                );
-            }
-            // (Format::DecimalExponent, Format::BinarySI) => todo!(),
-            // (Format::DecimalExponent, Format::DecimalExponent) => {}
-            // (Format::DecimalExponent, Format::DecimalSI) => todo!(),
-            (Format::DecimalSI, Format::BinarySI) => {
-                let value = rhs
-                    .value
-                    .mul(
-                        Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
-                            .unwrap_or_default()
-                            .normalize(),
-                    )
-                    // .round_dp(6)
-                    .normalize();
-
-                rhs.value = value;
-                rhs.format = Format::DecimalSI;
-                rhs.string_representation = format!(
-                    "{}{}",
-                    rhs.value,
-                    scale_format_to_string(&rhs.scale, &rhs.format)
-                );
-            }
-            // (Format::DecimalSI, Format::DecimalExponent) => {
-            //     rhs.format = Format::DecimalSI;
-            //     rhs.string_representation = format!(
-            //         "{}{}",
-            //         rhs.value,
-            //         scale_format_to_string(&rhs.scale, &rhs.format)
-            //     );
-            // }
-            (Format::DecimalSI, Format::DecimalSI) => {}
-        };
+        normalize_formats(&mut lhs, &mut rhs);
 
         // Bring both scales to the same ones
         // - If the scales are different, use the smaller scale as output scale
-
-        let rhs_scale: i32 = (&rhs.scale).into();
-        let lhs_scale: i32 = (&lhs.scale).into();
-        let multiplier = rhs_scale.abs_diff(lhs_scale).to_i32().unwrap_or_default();
-
-        match lhs_scale.cmp(&rhs_scale) {
-            std::cmp::Ordering::Less => {
-                // Bring the rhs to the lower scale (lhs)
-                rhs.value = rhs.value.mul(
-                    Decimal::from_f32(match &rhs.format {
-                        Format::BinarySI => 1024_f32.powi(multiplier),
-                        // Format::DecimalExponent => 1000_f32.powi(multiplier),
-                        Format::DecimalSI => 1000_f32.powi(multiplier),
-                    })
-                    .unwrap_or_default(),
-                );
-                rhs.scale = lhs.scale.clone();
-            }
-            std::cmp::Ordering::Equal => {
-                // If equal do nothing
-            }
-            std::cmp::Ordering::Greater => {
-                // Bring the lhs to the lower scale (rhs)
-                lhs.value = lhs.value.mul(
-                    Decimal::from_f32(match &lhs.format {
-                        Format::BinarySI => 1024_f32.powi(multiplier),
-                        // Format::DecimalExponent => 1000_f32.powi(multiplier),
-                        Format::DecimalSI => 1000_f32.powi(multiplier),
-                    })
-                    .unwrap_or_default(),
-                );
-                lhs.scale = rhs.scale.clone();
-            }
-        }
-
-        // If we are down to bytes, there won't be any decimal places
-        // thus we can round the value to the nearest integer
-        // if lhs.scale == Scale::One {
-        //     lhs.value = lhs.value.round_dp(0);
-        // }
-        // if rhs.scale == Scale::One {
-        //     rhs.value = rhs.value.round_dp(0);
-        // }
+        normalize_scales(&mut lhs, &mut rhs);
 
         // Add the normalized values
         let value = lhs.value.add(rhs.value).normalize();
-
-        // Set the string_representation for the output
-        let string_representation = format!(
-            "{}{}",
-            value,
-            scale_format_to_string(&lhs.scale, &lhs.format)
-        );
 
         Self {
             value,
             scale: lhs.scale,
             format: lhs.format,
-            string_representation,
         }
+    }
+}
+
+impl Sub for ParsedQuantity {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        let mut lhs = self;
+        let mut rhs = rhs;
+
+        // Bring both quantities to the same format
+        // - If the formats are different, use the lhs format as output format and
+        //   multiply the rhs value by the format multiplier
+        normalize_formats(&mut lhs, &mut rhs);
+
+        // Bring both scales to the same ones
+        // - If the scales are different, use the smaller scale as output scale
+        normalize_scales(&mut lhs, &mut rhs);
+
+        // Subtract the normalized values
+        let value = lhs.value.sub(rhs.value).normalize();
+
+        Self {
+            value,
+            scale: lhs.scale,
+            format: lhs.format,
+        }
+    }
+}
+
+impl Neg for ParsedQuantity {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self {
+            value: self.value.neg(),
+            scale: self.scale,
+            format: self.format,
+        }
+    }
+}
+
+impl AddAssign for ParsedQuantity {
+    fn add_assign(&mut self, rhs: Self) {
+        let mut rhs = rhs;
+
+        normalize_formats(self, &mut rhs);
+        normalize_scales(self, &mut rhs);
+
+        self.value.add_assign(rhs.value);
+    }
+}
+
+impl SubAssign for ParsedQuantity {
+    fn sub_assign(&mut self, rhs: Self) {
+        let mut rhs = rhs;
+
+        normalize_formats(self, &mut rhs);
+        normalize_scales(self, &mut rhs);
+
+        self.value.sub_assign(rhs.value);
     }
 }
 
@@ -210,15 +156,114 @@ impl ParsedQuantity {
             scale_format_to_string(&self.scale, &self.format)
         )
     }
+
+    /// Returns the value of the quantity as an f64.
+    pub fn to_bytes_f64(&self) -> Option<f64> {
+        let scale: i32 = (&self.scale).into();
+
+        self.value.to_f64().map(|value| {
+            value
+                * match &self.format {
+                    Format::BinarySI => 1024_f64.powi(scale),
+                    // Format::DecimalExponent => 1000_f64.powi(multiplier),
+                    Format::DecimalSI => 1000_f64.powi(scale),
+                }
+        })
+    }
+}
+
+fn normalize_scales(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
+    let rhs_scale: i32 = (&rhs.scale).into();
+    let lhs_scale: i32 = (&lhs.scale).into();
+    let multiplier = rhs_scale.abs_diff(lhs_scale).to_i32().unwrap_or_default();
+
+    match lhs_scale.cmp(&rhs_scale) {
+        std::cmp::Ordering::Less => {
+            // Bring the rhs to the lower scale (lhs)
+            rhs.value = rhs.value
+                * Decimal::from_f32(match &rhs.format {
+                    Format::BinarySI => 1024_f32.powi(multiplier),
+                    // Format::DecimalExponent => 1000_f32.powi(multiplier),
+                    Format::DecimalSI => 1000_f32.powi(multiplier),
+                })
+                .unwrap_or_default();
+            rhs.scale = lhs.scale.clone();
+        }
+        std::cmp::Ordering::Equal => {
+            // If equal do nothing
+        }
+        std::cmp::Ordering::Greater => {
+            // Bring the lhs to the lower scale (rhs)
+            lhs.value = lhs.value
+                * Decimal::from_f32(match &lhs.format {
+                    Format::BinarySI => 1024_f32.powi(multiplier),
+                    // Format::DecimalExponent => 1000_f32.powi(multiplier),
+                    Format::DecimalSI => 1000_f32.powi(multiplier),
+                })
+                .unwrap_or_default();
+            lhs.scale = rhs.scale.clone();
+        }
+    }
+}
+
+fn normalize_formats(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
+    match (&lhs.format, &rhs.format) {
+        (Format::BinarySI, Format::BinarySI) => {}
+        // (Format::BinarySI, Format::DecimalExponent) => {
+        //     let value = (rhs.value)
+        //         .mul(
+        //             Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
+        //                 .unwrap_or_default()
+        //                 .normalize(),
+        //         )
+        //         .normalize();
+
+        //     rhs.value = value;
+        //     rhs.format = Format::BinarySI;
+        // }
+        (Format::BinarySI, Format::DecimalSI) => {
+            let value = rhs
+                .value
+                .mul(
+                    Decimal::from_f32((1000_f32 / 1024_f32).powi(rhs.scale.clone().into()))
+                        .unwrap_or_default()
+                        .normalize(),
+                )
+                .normalize();
+
+            rhs.value = value;
+            rhs.format = Format::BinarySI;
+        }
+        // (Format::DecimalExponent, Format::BinarySI) => todo!(),
+        // (Format::DecimalExponent, Format::DecimalExponent) => {}
+        // (Format::DecimalExponent, Format::DecimalSI) => todo!(),
+        (Format::DecimalSI, Format::BinarySI) => {
+            let value = rhs
+                .value
+                .mul(
+                    Decimal::from_f32((1024_f32 / 1000_f32).powi(rhs.scale.clone().into()))
+                        .unwrap_or_default()
+                        .normalize(),
+                )
+                .normalize();
+
+            rhs.value = value;
+            rhs.format = Format::DecimalSI;
+        }
+        // (Format::DecimalSI, Format::DecimalExponent) => {
+        //     rhs.format = Format::DecimalSI;
+        // }
+        (Format::DecimalSI, Format::DecimalSI) => {}
+    };
 }
 
 // - Format -
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Format {
+enum Format {
     /// e.g., 12Mi = (12 * 2^20) = (12 * 1024^2)
     BinarySI,
-    /// e.g., 12e6 = (12 * 10^6)
+    // /// e.g., 12e6 = (12 * 10^6)
     // DecimalExponent,
     /// e.g., 12M = (12 * 10^6) = (12 * 1000^2)
     DecimalSI,
@@ -323,8 +368,6 @@ pub(crate) fn parse_quantity_string(
         return Err(ParseQuantityError::EmptyString);
     }
 
-    let string_representation = input.to_owned();
-
     let error_mapper = |err: nom::Err<nom::error::Error<&str>>| match err {
         nom::Err::Incomplete(err) => nom::Err::Incomplete(err),
         nom::Err::Error(err) => nom::Err::Error(nom::error::Error {
@@ -346,7 +389,6 @@ pub(crate) fn parse_quantity_string(
         ParsedQuantity {
             format,
             scale,
-            string_representation,
             value: Decimal::from_f64(signed_number)
                 .ok_or(ParseQuantityError::DecimalParsingFailed)?,
         },
@@ -453,7 +495,8 @@ mod tests {
         // and for now this should be good enough
         assert_eq!(quantity.format, Format::DecimalSI);
 
-        assert_eq!(quantity.to_string(), "1.25e3".to_owned());
+        // assert_eq!(quantity.to_string(), "1.25e3".to_owned());
+        assert_eq!(quantity.to_string(), "1250".to_owned());
     }
 
     #[test]
@@ -669,5 +712,45 @@ mod tests {
         let q3 = q1 + q2;
 
         assert_eq!(q3.to_string(), "2.0485761M");
+    }
+
+    #[test]
+    fn test_quantity_subtraction() {
+        let q1 = parse_quantity_string("5Mi").unwrap().1;
+        let q2 = parse_quantity_string("2Mi").unwrap().1;
+
+        let q3 = q1 - q2;
+
+        assert_eq!(q3.to_string(), "3Mi");
+    }
+
+    #[test]
+    fn test_quantity_add_assign() {
+        let mut q1 = parse_quantity_string("5Mi").unwrap().1;
+        let q2 = parse_quantity_string("2Mi").unwrap().1;
+
+        q1 += q2;
+
+        assert_eq!(q1.to_string(), "7Mi");
+    }
+
+    #[test]
+    fn test_quantity_sub_assign() {
+        let mut q1 = parse_quantity_string("5Mi").unwrap().1;
+        let q2 = parse_quantity_string("2Mi").unwrap().1;
+
+        q1 -= q2;
+
+        assert_eq!(q1.to_string(), "3Mi");
+    }
+
+    #[test]
+    fn test_quantity_sub_mixed() {
+        let q1 = parse_quantity_string("2M").unwrap().1;
+        let q2 = parse_quantity_string("500k").unwrap().1;
+
+        let q3 = q1 - q2;
+
+        assert_eq!(q3.to_string(), "1500k");
     }
 }

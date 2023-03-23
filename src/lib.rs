@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![doc = include_str!("../README.md")]
 
 mod parser;
 
@@ -31,7 +32,9 @@ impl From<ParsedQuantity> for Quantity {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+
+    use crate::{ParseQuantityError, ParsedQuantity};
 
     #[test]
     fn test_quantity_addition_external() {
@@ -61,6 +64,21 @@ mod tests {
         let q3: Quantity = q3.into();
 
         assert_eq!(q3.0, "1500m");
+    }
+
+    #[test]
+    fn test_quantity_subtraction_external_2() {
+        let q1: Result<ParsedQuantity, _> = Quantity("1".to_string()).try_into();
+        let q2: Result<ParsedQuantity, _> = Quantity("500m".to_string()).try_into();
+
+        assert!(q1.is_ok());
+        assert!(q2.is_ok());
+
+        let q3: ParsedQuantity = q1.unwrap() - q2.unwrap();
+
+        let q3: Quantity = q3.into();
+
+        assert_eq!(q3.0, "500m");
     }
 
     #[test]

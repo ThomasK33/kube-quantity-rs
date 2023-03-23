@@ -1,5 +1,5 @@
 [package]
-name = "k8s-quantity"
+name = "k8s_quantity"
 version = "0.1.0"
 edition = "2021"
 
