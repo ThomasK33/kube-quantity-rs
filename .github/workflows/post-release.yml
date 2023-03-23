@@ -20,7 +20,3 @@ jobs:
           commit_summary_template: "update changelog for %s changes"
           header: |
             # Changelog
-
-            ## [Unreleased]
-
-            - see: <https://github.com/thomask33/kube-quantity-rs/compare/v0.1.1...HEAD>
