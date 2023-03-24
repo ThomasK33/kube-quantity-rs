@@ -1,6 +1,6 @@
 [package]
 name = "kube_quantity"
-version = "0.2.0"
+version = "0.3.0"
 
 authors = ["Thomas Kosiewski <thoma471@googlemail.com>"]
 description = "kube_quantity is a library adding arithmetic operations to the Quantity type from the k8s-openapi crate."
