@@ -25,6 +25,28 @@ Please check the [CHANGELOG](https://github.com/ThomasK33/kube-quantity-rs/blob/
 
 ## Usage
 
+## Parsing of quantities
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Parse directly from &str
+let quantity = "1Ki";
+let quantity: Result<ParsedQuantity, ParseQuantityError> = quantity.try_into();
+assert_eq!(quantity.unwrap().to_string(), "1Ki");
+
+// Parse from a String
+let quantity = String::from("2Mi");
+let quantity: Result<ParsedQuantity, ParseQuantityError> = quantity.try_into();
+assert_eq!(quantity.unwrap().to_string(), "2Mi");
+
+// Parse from a `k8s_openapi` Quantity
+let quantity = Quantity("2.5Gi".to_string());
+let quantity: Result<ParsedQuantity, ParseQuantityError> = quantity.try_into();
+assert_eq!(quantity.unwrap().to_string(), "2.5Gi");
+```
+
 ### Addition of quantities
 
 ```rust

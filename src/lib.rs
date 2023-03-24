@@ -29,6 +29,22 @@ impl TryFrom<&Quantity> for ParsedQuantity {
     }
 }
 
+impl TryFrom<&str> for ParsedQuantity {
+    type Error = ParseQuantityError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        parse_quantity_string(value).map(|(_, quantity)| quantity)
+    }
+}
+
+impl TryFrom<String> for ParsedQuantity {
+    type Error = ParseQuantityError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        parse_quantity_string(&value).map(|(_, quantity)| quantity)
+    }
+}
+
 impl From<ParsedQuantity> for Quantity {
     fn from(value: ParsedQuantity) -> Self {
         Self(value.to_string())
