@@ -2,3 +2,5 @@ pre-release-replacements = [
 	{ file = "README.md", search = "kube_quantity = .*", replace = "{{crate_name}} = \"{{version}}\"" },
 	# { file = "src/lib.rs", search = "kube_quantity = .*", replace = "{{crate_name}} = \"{{version}}\"" },
 ]
+
+pre-release-hook = ["scripts/release-pre.sh"]
