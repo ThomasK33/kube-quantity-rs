@@ -1,4 +1,5 @@
 use std::{
+    cmp::{Eq, Ord, PartialEq, PartialOrd},
     fmt::Display,
     ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
@@ -131,6 +132,38 @@ impl SubAssign for ParsedQuantity {
         normalize_scales(self, &mut rhs);
 
         self.value.sub_assign(rhs.value);
+    }
+}
+
+impl PartialEq for ParsedQuantity {
+    fn eq(&self, other: &Self) -> bool {
+        let mut lhs = self.clone();
+        let mut rhs = other.clone();
+
+        normalize_formats(&mut lhs, &mut rhs);
+        normalize_scales(&mut lhs, &mut rhs);
+
+        lhs.value.eq(&rhs.value)
+    }
+}
+
+impl Eq for ParsedQuantity {}
+
+impl PartialOrd for ParsedQuantity {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ParsedQuantity {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let mut lhs = self.clone();
+        let mut rhs = other.clone();
+
+        normalize_formats(&mut lhs, &mut rhs);
+        normalize_scales(&mut lhs, &mut rhs);
+
+        lhs.value.cmp(&rhs.value)
     }
 }
 
@@ -463,4 +496,124 @@ fn normalize_formats(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
         // }
         (Format::DecimalSI, Format::DecimalSI) => {}
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_partial_eq() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        assert_eq!(q1, q2);
+    }
+
+    #[test]
+    fn test_partial_ne() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Mega,
+            format: Format::DecimalSI,
+        };
+
+        assert_ne!(q1, q2);
+    }
+
+    #[test]
+    fn test_ord_le() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Mega,
+            format: Format::DecimalSI,
+        };
+
+        assert!(q1 < q2);
+    }
+
+    #[test]
+    fn test_ord_leq() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::DecimalSI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::DecimalSI,
+        };
+
+        assert!(q1 <= q2);
+    }
+
+    #[test]
+    fn test_ord_le_different_formats() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::One,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::One,
+            format: Format::DecimalSI,
+        };
+
+        assert!(q1 <= q2);
+        assert_eq!(q1, q2);
+    }
+
+    #[test]
+    fn test_eq_different_formats_and_scales() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1024.0).unwrap(),
+            scale: Scale::One,
+            format: Format::DecimalSI,
+        };
+
+        assert_eq!(q1, q2);
+    }
+
+    #[test]
+    fn test_ord_gt() {
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(1.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(1020.0).unwrap(),
+            scale: Scale::One,
+            format: Format::DecimalSI,
+        };
+
+        assert!(q1 > q2);
+    }
 }

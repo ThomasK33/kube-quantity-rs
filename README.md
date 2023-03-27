@@ -31,7 +31,7 @@ Please check the [CHANGELOG](https://github.com/ThomasK33/kube-quantity-rs/blob/
 use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 use kube_quantity::{ParseQuantityError, ParsedQuantity};
 
-// Parse directly from &str
+// Parse from &str
 let quantity = "1Ki";
 let quantity: Result<ParsedQuantity, ParseQuantityError> = quantity.try_into();
 assert_eq!(quantity.unwrap().to_string(), "1Ki");
@@ -113,6 +113,48 @@ q1 -= q2.unwrap();
 let q1: Quantity = q1.into();
 
 assert_eq!(q1.0, "9500M");
+```
+
+### Comparison of quantities
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Parse directly from &str
+let q1 = "5Ki";
+let q1: Result<ParsedQuantity, ParseQuantityError> = q1.try_into();
+let q1 = q1.unwrap();
+assert_eq!(q1.to_string(), "5Ki");
+
+// Parse from a `k8s_openapi` Quantity
+let q2 = Quantity("2.5Gi".to_string());
+let q2: Result<ParsedQuantity, ParseQuantityError> = q2.try_into();
+let q2 = q2.unwrap();
+assert_eq!(q2.to_string(), "2.5Gi");
+
+// Compare byte amount equality
+assert!(q1 < q2);
+```
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Parse directly from &str
+let q1 = "1Ki";
+let q1: Result<ParsedQuantity, ParseQuantityError> = q1.try_into();
+let q1 = q1.unwrap();
+assert_eq!(q1.to_string(), "1Ki");
+
+// Parse from a `k8s_openapi` Quantity
+let q2 = Quantity("1024".to_string());
+let q2: Result<ParsedQuantity, ParseQuantityError> = q2.try_into();
+let q2 = q2.unwrap();
+assert_eq!(q2.to_string(), "1024");
+
+// Compare byte amount equality
+assert_eq!(q1, q2);
 ```
 
 ## License
