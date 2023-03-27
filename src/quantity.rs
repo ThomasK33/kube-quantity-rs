@@ -1,5 +1,6 @@
 use std::{
     cmp::{Eq, Ord, PartialEq, PartialOrd},
+    default::Default,
     fmt::Display,
     ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
@@ -24,7 +25,7 @@ use crate::{format::Format, scale::Scale, utils::scale_format_to_string};
 ///
 /// assert_eq!(quantity.unwrap().to_string(), "1Ki");
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ParsedQuantity {
     // The actual value of the quantity
     pub(crate) value: Decimal,
@@ -615,5 +616,14 @@ mod tests {
         };
 
         assert!(q1 > q2);
+    }
+
+    #[test]
+    fn test_default_parsed_quantity() {
+        let quantity = ParsedQuantity::default();
+
+        assert_eq!(quantity.value, Decimal::from_f32(0.0).unwrap());
+        assert_eq!(quantity.scale, Scale::One);
+        assert_eq!(quantity.format, Format::BinarySI);
     }
 }
