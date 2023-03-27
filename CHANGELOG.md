@@ -1,5 +1,20 @@
 # Changelog
 
+<a name="v0.4.0"></a>
+## [v0.4.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.4.0) - 27 Mar 2023
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.4.0 -->
+
+## What's Changed
+### Added
+* Added Ord and PartialEQ implementation for parsed quantities by [@ThomasK33](https://github.com/ThomasK33) in https://github.com/ThomasK33/kube-quantity-rs/pull/4
+
+
+**Full Changelog**: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.3.0...v0.4.0
+
+[Changes][v0.4.0]
+
+
 <a name="v0.3.0"></a>
 ## [v0.3.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.3.0) - 24 Mar 2023
 
@@ -58,6 +73,7 @@
 [Changes][v0.1.0]
 
 
+[v0.4.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.1.1...v0.2.0
 [v0.1.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.1.0...v0.1.1
