@@ -1,5 +1,34 @@
 # Changelog
 
+<a name="v0.5.1"></a>
+## [v0.5.1](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.5.1) - 27 Mar 2023
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.5.1 -->
+
+## What's Changed
+### Fixed
+* Fixed docs.rs doc generation missing a feature flag
+
+**Full Changelog**: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.5.0...v0.5.1
+
+[Changes][v0.5.1]
+
+
+<a name="v0.5.0"></a>
+## [v0.5.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.5.0) - 27 Mar 2023
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.5.0 -->
+
+## What's Changed
+### Fixed
+* Moved k8s-openapi features to dev dependencies by [@ThomasK33](https://github.com/ThomasK33) in https://github.com/ThomasK33/kube-quantity-rs/pull/5
+
+
+**Full Changelog**: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.4.0...v0.5.0
+
+[Changes][v0.5.0]
+
+
 <a name="v0.4.0"></a>
 ## [v0.4.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.4.0) - 27 Mar 2023
 
@@ -73,6 +102,8 @@
 [Changes][v0.1.0]
 
 
+[v0.5.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.5.0...v0.5.1
+[v0.5.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.1.1...v0.2.0
