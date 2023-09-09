@@ -3,7 +3,7 @@
 <a name="v0.7.0"></a>
 ## [v0.7.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.7.0) - 09 Sep 2023
 
-<!-- Release notes generated using configuration in .github/release.yml at main -->
+<!-- Release notes generated using configuration in .github/release.yml at v0.7.0 -->
 
 ## What's Changed
 ### Changed
