@@ -1,5 +1,22 @@
 # Changelog
 
+<a name="v0.7.0"></a>
+## [v0.7.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.7.0) - 09 Sep 2023
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Changed
+* bump openapi and k8s version by [@fluktuid](https://github.com/fluktuid) in https://github.com/ThomasK33/kube-quantity-rs/pull/9
+
+## New Contributors
+* [@fluktuid](https://github.com/fluktuid) made their first contribution in https://github.com/ThomasK33/kube-quantity-rs/pull/9
+
+**Full Changelog**: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.6.1...v0.7.0
+
+[Changes][v0.7.0]
+
+
 <a name="v0.6.1"></a>
 ## [v0.6.1](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.6.1) - 14 May 2023
 
@@ -129,6 +146,7 @@
 [Changes][v0.1.0]
 
 
+[v0.7.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.6.1...v0.7.0
 [v0.6.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.5.1...v0.6.0
 [v0.5.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.5.0...v0.5.1
