@@ -2,7 +2,7 @@ use std::{
     cmp::{Eq, Ord, PartialEq, PartialOrd},
     default::Default,
     fmt::Display,
-    ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign, Div, DivAssign},
 };
 
 use rust_decimal::prelude::*;
@@ -102,6 +102,60 @@ impl Sub for ParsedQuantity {
     }
 }
 
+impl Div for ParsedQuantity {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        let mut lhs = self;
+        let mut rhs = rhs;
+
+        // Bring both quantities to the same format
+        // - If the formats are different, use the lhs format as output format and
+        //   multiply the rhs value by the format multiplier
+        normalize_formats(&mut lhs, &mut rhs);
+
+        // Bring both scales to the same ones
+        // - If the scales are different, use the smaller scale as output scale
+        normalize_scales(&mut lhs, &mut rhs);
+
+        // Divide the normalized values
+        let value = lhs.value.div(rhs.value).normalize();
+
+        Self {
+            value,
+            scale: lhs.scale,
+            format: lhs.format,
+        }
+    }
+}
+
+impl Mul for ParsedQuantity {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut lhs = self;
+        let mut rhs = rhs;
+
+        // Bring both quantities to the same format
+        // - If the formats are different, use the lhs format as output format and
+        //   multiply the rhs value by the format multiplier
+        normalize_formats(&mut lhs, &mut rhs);
+
+        // Bring both scales to the same ones
+        // - If the scales are different, use the smaller scale as output scale
+        normalize_scales(&mut lhs, &mut rhs);
+
+        // Multiply the normalized values
+        let value = lhs.value.mul(rhs.value).normalize();
+
+        Self {
+            value,
+            scale: lhs.scale,
+            format: lhs.format,
+        }
+    }
+}
+
 impl Neg for ParsedQuantity {
     type Output = Self;
 
@@ -133,6 +187,28 @@ impl SubAssign for ParsedQuantity {
         normalize_scales(self, &mut rhs);
 
         self.value.sub_assign(rhs.value);
+    }
+}
+
+impl MulAssign for ParsedQuantity {
+    fn mul_assign(&mut self, rhs: Self) {
+        let mut rhs = rhs;
+
+        normalize_formats(self, &mut rhs);
+        normalize_scales(self, &mut rhs);
+
+        self.value.mul_assign(rhs.value);
+    }
+}
+
+impl DivAssign for ParsedQuantity {
+    fn div_assign(&mut self, rhs: Self) {
+        let mut rhs = rhs;
+
+        normalize_formats(self, &mut rhs);
+        normalize_scales(self, &mut rhs);
+
+        self.value.div_assign(rhs.value);
     }
 }
 
