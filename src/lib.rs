@@ -54,8 +54,12 @@ impl From<ParsedQuantity> for Quantity {
 #[cfg(test)]
 mod tests {
     use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+    use rust_decimal::Decimal;
+    use rust_decimal::prelude::FromPrimitive;
 
     use crate::{ParseQuantityError, ParsedQuantity};
+    use crate::format::Format;
+    use crate::scale::Scale;
 
     #[test]
     fn test_quantity_addition() {
@@ -157,5 +161,102 @@ mod tests {
 
         assert!(q.is_err());
         assert_eq!(q.unwrap_err().to_string(), "quantity parsing failed");
+    }
+
+
+    #[test]
+    fn test_div() {
+        let exp_result = ParsedQuantity {
+            value: Decimal::from_f32(2.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(4.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(2.0).unwrap(),
+            scale: Scale::One,
+            format: Format::BinarySI,
+        };
+
+        let result = q1 / q2;
+
+        assert_eq!(result, exp_result);
+    }
+
+    #[test]
+    fn test_div_assign() {
+        let exp_result = ParsedQuantity {
+            value: Decimal::from_f32(2.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        let mut q1 = ParsedQuantity {
+            value: Decimal::from_f32(4.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(2.0).unwrap(),
+            scale: Scale::One,
+            format: Format::BinarySI,
+        };
+
+        q1 /= q2;
+
+        assert_eq!(q1, exp_result);
+    }
+
+    #[test]
+    fn test_mul() {
+        let exp_result = ParsedQuantity {
+            value: Decimal::from_f32(8.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        let q1 = ParsedQuantity {
+            value: Decimal::from_f32(4.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(2.0).unwrap(),
+            scale: Scale::One,
+            format: Format::BinarySI,
+        };
+
+        let result = q1 * q2;
+
+        assert_eq!(result, exp_result);
+    }
+
+    #[test]
+    fn test_mul_assign() {
+        let exp_result = ParsedQuantity {
+            value: Decimal::from_f32(8.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+
+        let mut q1 = ParsedQuantity {
+            value: Decimal::from_f32(4.0).unwrap(),
+            scale: Scale::Kilo,
+            format: Format::BinarySI,
+        };
+        let q2 = ParsedQuantity {
+            value: Decimal::from_f32(2.0).unwrap(),
+            scale: Scale::One,
+            format: Format::BinarySI,
+        };
+
+        q1 *= q2;
+
+        assert_eq!(q1, exp_result);
     }
 }
