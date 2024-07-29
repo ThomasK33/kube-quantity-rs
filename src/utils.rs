@@ -4,6 +4,8 @@ use crate::{format::Format, scale::Scale};
 pub(crate) fn scale_format_to_string(scale: &Scale, format: &Format) -> String {
     match format {
         Format::BinarySI => match scale {
+            Scale::Nano => "n".to_owned(),
+            Scale::Micro => "u".to_owned(),
             Scale::Milli => "".to_owned(),
             Scale::One => "".to_owned(),
             Scale::Kilo => "Ki".to_owned(),
@@ -14,6 +16,8 @@ pub(crate) fn scale_format_to_string(scale: &Scale, format: &Format) -> String {
             Scale::Exa => "Ei".to_owned(),
         },
         Format::DecimalSI => match scale {
+            Scale::Nano => "n".to_owned(),
+            Scale::Micro => "u".to_owned(),
             Scale::Milli => "m".to_owned(),
             Scale::One => "".to_owned(),
             Scale::Kilo => "k".to_owned(),

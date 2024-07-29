@@ -2,6 +2,8 @@
 /// scales are omitted for mathematical simplicity.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Default)]
 pub(crate) enum Scale {
+    Nano,
+    Micro,
     Milli,
     #[default]
     One,
@@ -25,6 +27,8 @@ impl From<&Scale> for i32 {
     fn from(value: &Scale) -> Self {
         // https://en.wikipedia.org/wiki/Kilobyte
         match value {
+            Scale::Nano => -3,
+            Scale::Micro => -2,
             Scale::Milli => -1,
             Scale::One => 0,
             Scale::Kilo => 1,
@@ -42,6 +46,8 @@ impl TryFrom<i32> for Scale {
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
+            -3 => Ok(Scale::Nano),
+            -2 => Ok(Scale::Micro),
             -1 => Ok(Scale::Milli),
             0 => Ok(Scale::One),
             1 => Ok(Scale::Kilo),
