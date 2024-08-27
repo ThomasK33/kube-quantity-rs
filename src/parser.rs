@@ -95,6 +95,8 @@ fn parse_suffix(input: &str) -> IResult<&str, (Format, Scale)> {
         tag("Ti"),
         tag("Pi"),
         tag("Ei"),
+        tag("n"),
+        tag("u"),
         tag("m"),
         tag("k"),
         tag("M"),
@@ -114,6 +116,8 @@ fn parse_suffix(input: &str) -> IResult<&str, (Format, Scale)> {
             "Pi" => (Format::BinarySI, Scale::Peta),
             "Ei" => (Format::BinarySI, Scale::Exa),
             //
+            "n" => (Format::DecimalSI, Scale::Nano),
+            "u" => (Format::DecimalSI, Scale::Micro),
             "m" => (Format::DecimalSI, Scale::Milli),
             "" => (Format::DecimalSI, Scale::One),
             "k" => (Format::DecimalSI, Scale::Kilo),
@@ -203,6 +207,32 @@ mod tests {
     }
 
     #[test]
+    fn test_nano_quantity() {
+        let quantity = parse_quantity_string("100000000n");
+        assert!(quantity.is_ok());
+
+        let quantity = quantity.unwrap().1;
+        assert_eq!(quantity.value, Decimal::new(100000000, 0));
+        assert_eq!(quantity.scale, Scale::Nano);
+        assert_eq!(quantity.format, Format::DecimalSI);
+
+        assert_eq!(quantity.to_string(), "100000000n");
+    }
+
+    #[test]
+    fn test_micro_quantity() {
+        let quantity = parse_quantity_string("100000u");
+        assert!(quantity.is_ok());
+
+        let quantity = quantity.unwrap().1;
+        assert_eq!(quantity.value, Decimal::new(100000, 0));
+        assert_eq!(quantity.scale, Scale::Micro);
+        assert_eq!(quantity.format, Format::DecimalSI);
+
+        assert_eq!(quantity.to_string(), "100000u");
+    }
+
+    #[test]
     fn test_milli_quantity() {
         let quantity = parse_quantity_string("100m");
         assert!(quantity.is_ok());
@@ -243,6 +273,26 @@ mod tests {
         let q3 = q1 + q2;
 
         assert_eq!(q3.to_string(), "2049Ki");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_mixed_scales_2() {
+        let q1 = parse_quantity_string("50m").unwrap().1;
+        let q2 = parse_quantity_string("50000000n").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "100000000n");
+    }
+
+    #[test]
+    fn test_quantity_addition_binary_si_mixed_scales_3() {
+        let q1 = parse_quantity_string("1.5u").unwrap().1;
+        let q2 = parse_quantity_string("500n").unwrap().1;
+
+        let q3 = q1 + q2;
+
+        assert_eq!(q3.to_string(), "2000n");
     }
 
     #[test]
