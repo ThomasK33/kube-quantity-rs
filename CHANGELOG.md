@@ -1,5 +1,25 @@
 # Changelog
 
+<a name="v0.8.0"></a>
+## [v0.8.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.8.0) - 28 Sep 2024
+
+## What's Changed
+### Added
+* Implement Multiplication and Division of Quantities by [@volfco](https://github.com/volfco) in https://github.com/ThomasK33/kube-quantity-rs/pull/15
+* add support for nanocpus (fixes issue [#18](https://github.com/ThomasK33/kube-quantity-rs/issues/18)) by [@philgebhardt](https://github.com/philgebhardt) in https://github.com/ThomasK33/kube-quantity-rs/pull/19
+### Changed
+* Update k8s-openapi to latest version by [@xmakro](https://github.com/xmakro) in https://github.com/ThomasK33/kube-quantity-rs/pull/17
+
+## New Contributors
+* [@volfco](https://github.com/volfco) made their first contribution in https://github.com/ThomasK33/kube-quantity-rs/pull/15
+* [@philgebhardt](https://github.com/philgebhardt) made their first contribution in https://github.com/ThomasK33/kube-quantity-rs/pull/19
+* [@xmakro](https://github.com/xmakro) made their first contribution in https://github.com/ThomasK33/kube-quantity-rs/pull/17
+
+**Full Changelog**: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.7.1...v0.8.0
+
+[Changes][v0.8.0]
+
+
 <a name="v0.7.1"></a>
 ## [v0.7.1](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.7.1) - 27 Feb 2024
 
@@ -156,6 +176,7 @@
 [Changes][v0.1.0]
 
 
+[v0.8.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.7.1...v0.8.0
 [v0.7.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.7.0...v0.7.1
 [v0.7.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.6.1...v0.7.0
 [v0.6.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.6.0...v0.6.1
