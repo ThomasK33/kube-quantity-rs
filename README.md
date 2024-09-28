@@ -2,11 +2,13 @@
 
 [![Crates.io](https://img.shields.io/crates/v/kube_quantity)](https://crates.io/crates/kube_quantity)
 
-`kube_quantity` is a library adding arithmetic operations to the [`Quantity`](https://arnavion.github.io/k8s-openapi/v0.17.x/k8s_openapi/apimachinery/pkg/api/resource/struct.Quantity.html#) type from the [`k8s-openapi`](https://crates.io/crates/k8s-openapi) crate.
+`kube_quantity` is a library adding arithmetic operations to the [`Quantity`](https://arnavion.github.io/k8s-openapi/v0.17.x/k8s_openapi/apimachinery/pkg/api/resource/struct.Quantity.html#)
+type from the [`k8s-openapi`](https://crates.io/crates/k8s-openapi) crate.
 
 ## Installation
 
-Run the following Cargo command in your project directory to add the latest stable version:
+Run the following Cargo command in your project directory to add the latest
+stable version:
 
 ```bash
 cargo add kube_quantity
@@ -21,7 +23,8 @@ kube_quantity = "0.7.1"
 
 ## Upgrading
 
-Please check the [CHANGELOG](https://github.com/ThomasK33/kube-quantity-rs/blob/main/CHANGELOG.md) when upgrading.
+Please check the [CHANGELOG](https://github.com/ThomasK33/kube-quantity-rs/blob/main/CHANGELOG.md)
+when upgrading.
 
 ## Usage
 
@@ -69,6 +72,22 @@ assert_eq!(q3.0, "3Ki");
 use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 use kube_quantity::{ParseQuantityError, ParsedQuantity};
 
+// Try parsing k8s quantities
+let q1: Result<ParsedQuantity, ParseQuantityError> = Quantity("4.2Ki".to_string()).try_into();
+let q2: Result<ParsedQuantity, ParseQuantityError> = Quantity("2.1Ki".to_string()).try_into();
+
+// Add parsed quantities
+let q3: ParsedQuantity = q1.unwrap() + q2.unwrap();
+// Convert parsed quantity back into a k8s quantity
+let q3: Quantity = q3.into();
+
+assert_eq!(q3.0, "6.3Ki");
+```
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
 let q1: Result<ParsedQuantity, ParseQuantityError> = Quantity("5M".to_string()).try_into();
 let q2: Result<ParsedQuantity, ParseQuantityError> = Quantity("7M".to_string()).try_into();
 
@@ -79,6 +98,72 @@ let q1: Quantity = q1.into();
 
 assert_eq!(q1.0, "12M");
 
+```
+
+### Multiplication of quantities
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Try parsing k8s quantities
+let q1: Result<ParsedQuantity, ParseQuantityError> = Quantity("3k".to_string()).try_into();
+
+// Multiply parsed quantities
+let q1: ParsedQuantity = q1.unwrap() * 2;
+// Convert parsed quantity back into a k8s quantity
+let q2: Quantity = q1.into();
+
+assert_eq!(q2.0, "6k");
+```
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Try parsing k8s quantities
+let q1: Result<ParsedQuantity, ParseQuantityError> = Quantity("3k".to_string()).try_into();
+let mut q1: ParsedQuantity = q1.unwrap();
+
+// Multiply parsed quantities
+q1 *= 2;
+// Convert parsed quantity back into a k8s quantity
+let q2: Quantity = q1.into();
+
+assert_eq!(q2.0, "6k");
+```
+
+### Division of quantities
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Try parsing k8s quantities
+let q1: Result<ParsedQuantity, ParseQuantityError> = Quantity("4k".to_string()).try_into();
+
+// Multiply parsed quantities
+let q1: ParsedQuantity = q1.unwrap() / 2;
+// Convert parsed quantity back into a k8s quantity
+let q2: Quantity = q1.into();
+
+assert_eq!(q2.0, "2k");
+```
+
+```rust
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
+use kube_quantity::{ParseQuantityError, ParsedQuantity};
+
+// Try parsing k8s quantities
+let q1: Result<ParsedQuantity, ParseQuantityError> = Quantity("3k".to_string()).try_into();
+let mut q1: ParsedQuantity = q1.unwrap();
+
+// Multiply parsed quantities
+q1 /= 3;
+// Convert parsed quantity back into a k8s quantity
+let q2: Quantity = q1.into();
+
+assert_eq!(q2.0, "1k");
 ```
 
 ### Subtraction of quantities
@@ -159,4 +244,5 @@ assert_eq!(q1, q2);
 
 ## License
 
-Apache 2.0 licensed. See [LICENSE](https://github.com/ThomasK33/kube-quantity-rs/blob/main/LICENSE) for details.
+Apache 2.0 licensed. See [LICENSE](https://github.com/ThomasK33/kube-quantity-rs/blob/main/LICENSE)
+for details.

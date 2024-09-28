@@ -2,7 +2,7 @@ use std::{
     cmp::{Eq, Ord, PartialEq, PartialOrd},
     default::Default,
     fmt::Display,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign, Div, DivAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 use rust_decimal::prelude::*;
@@ -44,6 +44,16 @@ impl Display for ParsedQuantity {
         );
 
         write!(f, "{}", string_representation)
+    }
+}
+
+impl From<Decimal> for ParsedQuantity {
+    fn from(value: Decimal) -> Self {
+        Self {
+            value,
+            format: Format::DecimalSI,
+            scale: Scale::One,
+        }
     }
 }
 
@@ -102,56 +112,36 @@ impl Sub for ParsedQuantity {
     }
 }
 
-impl Div for ParsedQuantity {
+impl<T> Div<T> for ParsedQuantity
+where
+    T: Into<Decimal>,
+{
     type Output = Self;
 
-    fn div(self, rhs: Self) -> Self::Output {
-        let mut lhs = self;
-        let mut rhs = rhs;
-
-        // Bring both quantities to the same format
-        // - If the formats are different, use the lhs format as output format and
-        //   multiply the rhs value by the format multiplier
-        normalize_formats(&mut lhs, &mut rhs);
-
-        // Bring both scales to the same ones
-        // - If the scales are different, use the smaller scale as output scale
-        normalize_scales(&mut lhs, &mut rhs);
-
-        // Divide the normalized values
-        let value = lhs.value.div(rhs.value).normalize();
+    fn div(self, rhs: T) -> Self::Output {
+        let rhs: Decimal = rhs.into();
 
         Self {
-            value,
-            scale: lhs.scale,
-            format: lhs.format,
+            value: self.value / rhs,
+            scale: self.scale,
+            format: self.format,
         }
     }
 }
 
-impl Mul for ParsedQuantity {
+impl<T> Mul<T> for ParsedQuantity
+where
+    T: Into<Decimal>,
+{
     type Output = Self;
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        let mut lhs = self;
-        let mut rhs = rhs;
-
-        // Bring both quantities to the same format
-        // - If the formats are different, use the lhs format as output format and
-        //   multiply the rhs value by the format multiplier
-        normalize_formats(&mut lhs, &mut rhs);
-
-        // Bring both scales to the same ones
-        // - If the scales are different, use the smaller scale as output scale
-        normalize_scales(&mut lhs, &mut rhs);
-
-        // Multiply the normalized values
-        let value = lhs.value.mul(rhs.value).normalize();
+    fn mul(self, rhs: T) -> Self::Output {
+        let rhs: Decimal = rhs.into();
 
         Self {
-            value,
-            scale: lhs.scale,
-            format: lhs.format,
+            value: self.value * rhs,
+            scale: self.scale,
+            format: self.format,
         }
     }
 }
@@ -190,25 +180,25 @@ impl SubAssign for ParsedQuantity {
     }
 }
 
-impl MulAssign for ParsedQuantity {
-    fn mul_assign(&mut self, rhs: Self) {
-        let mut rhs = rhs;
+impl<T> MulAssign<T> for ParsedQuantity
+where
+    T: Into<Decimal>,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        let rhs: Decimal = rhs.into();
 
-        normalize_formats(self, &mut rhs);
-        normalize_scales(self, &mut rhs);
-
-        self.value.mul_assign(rhs.value);
+        self.value.mul_assign(rhs);
     }
 }
 
-impl DivAssign for ParsedQuantity {
-    fn div_assign(&mut self, rhs: Self) {
-        let mut rhs = rhs;
+impl<T> DivAssign<T> for ParsedQuantity
+where
+    T: Into<Decimal>,
+{
+    fn div_assign(&mut self, rhs: T) {
+        let rhs: Decimal = rhs.into();
 
-        normalize_formats(self, &mut rhs);
-        normalize_scales(self, &mut rhs);
-
-        self.value.div_assign(rhs.value);
+        self.value.div_assign(rhs);
     }
 }
 
@@ -527,18 +517,6 @@ fn normalize_scales(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
 fn normalize_formats(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
     match (&lhs.format, &rhs.format) {
         (Format::BinarySI, Format::BinarySI) => {}
-        // (Format::BinarySI, Format::DecimalExponent) => {
-        //     let value = (rhs.value)
-        //         .mul(
-        //             Decimal::from_f32((1024_f32 / 1000_f32).pow(rhs.scale.clone().into()))
-        //                 .unwrap_or_default()
-        //                 .normalize(),
-        //         )
-        //         .normalize();
-
-        //     rhs.value = value;
-        //     rhs.format = Format::BinarySI;
-        // }
         (Format::BinarySI, Format::DecimalSI) => {
             let value = rhs
                 .value
@@ -552,9 +530,6 @@ fn normalize_formats(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
             rhs.value = value;
             rhs.format = Format::BinarySI;
         }
-        // (Format::DecimalExponent, Format::BinarySI) => todo!(),
-        // (Format::DecimalExponent, Format::DecimalExponent) => {}
-        // (Format::DecimalExponent, Format::DecimalSI) => todo!(),
         (Format::DecimalSI, Format::BinarySI) => {
             let value = rhs
                 .value
@@ -568,9 +543,6 @@ fn normalize_formats(lhs: &mut ParsedQuantity, rhs: &mut ParsedQuantity) {
             rhs.value = value;
             rhs.format = Format::DecimalSI;
         }
-        // (Format::DecimalSI, Format::DecimalExponent) => {
-        //     rhs.format = Format::DecimalSI;
-        // }
         (Format::DecimalSI, Format::DecimalSI) => {}
     };
 }
