@@ -18,7 +18,7 @@ Or add the following line to your Cargo.toml:
 
 ```toml
 [dependencies]
-kube_quantity = "0.7.1"
+kube_quantity = "0.8.0"
 ```
 
 ## Upgrading
