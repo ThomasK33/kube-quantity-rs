@@ -5,6 +5,10 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
+    advisory-db = {
+      url = "github:rustsec/advisory-db";
+      flake = false;
+    };
   };
 
   outputs =
@@ -13,6 +17,7 @@
       nixpkgs,
       flake-utils,
       crane,
+      advisory-db,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -58,6 +63,18 @@
               inherit cargoArtifacts;
             }
           );
+          # Doc tests
+          cargo-doc = craneLib.cargoDoc (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+            }
+          );
+          # Audit dependencies
+          cargo-audit = craneLib.cargoAudit {
+            inherit advisory-db;
+            inherit (commonArgs) src;
+          };
         };
 
         devShells = {

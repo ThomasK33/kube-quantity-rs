@@ -1,11 +1,12 @@
-name: Cargo checks
+name: Nix flake check
 
 on:
   push:
   pull_request:
 
 jobs:
-  clippy_check:
+  nix_flake_check:
+    name: Nix flake check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
