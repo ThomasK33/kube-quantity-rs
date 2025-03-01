@@ -80,10 +80,12 @@
         devShells = {
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
-              cargo
               formatter
-              rustc
+
+              cargo
+              cargo-release
               clippy
+              rustc
             ];
           };
         };

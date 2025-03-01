@@ -4,7 +4,7 @@ use nom::{
     character::complete::one_of,
     combinator::{eof, opt},
     number::complete::double,
-    IResult,
+    IResult, Parser,
 };
 use rust_decimal::prelude::*;
 use thiserror::Error;
@@ -70,10 +70,13 @@ pub(crate) fn parse_quantity_string(
 /// signed number
 fn parse_signed_number(input: &str) -> IResult<&str, f64> {
     // Default to true
-    let (input, positive) =
-        opt(parse_sign)(input).map(|(input, positive)| (input, positive.unwrap_or(true)))?;
+    let (input, positive) = opt(parse_sign)
+        .parse(input)
+        .map(|(input, positive)| (input, positive.unwrap_or(true)))?;
     // Default num to 0.0
-    let (input, num) = opt(double)(input).map(|(input, num)| (input, num.unwrap_or(0.0)))?;
+    let (input, num) = opt(double)
+        .parse(input)
+        .map(|(input, num)| (input, num.unwrap_or(0.0)))?;
 
     Ok((input, if positive { num } else { -num }))
 }
@@ -104,7 +107,8 @@ fn parse_suffix(input: &str) -> IResult<&str, (Format, Scale)> {
         tag("T"),
         tag("P"),
         tag("E"),
-    ))(input)?;
+    ))
+    .parse(input)?;
 
     Ok((
         input,
