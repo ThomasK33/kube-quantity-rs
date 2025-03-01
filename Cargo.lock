@@ -186,7 +186,7 @@ dependencies = [
 
 [[package]]
 name = "kube_quantity"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "k8s-openapi",
  "nom",
