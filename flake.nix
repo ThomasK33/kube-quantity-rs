@@ -86,6 +86,9 @@
               cargo-release
               clippy
               rustc
+
+              zizmor
+              actionlint
             ];
           };
         };

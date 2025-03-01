@@ -11,6 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: false
           ref: main
       - uses: rhysd/changelog-from-release/action@ac0eec2f73a0c0ca0cb4ac3f1eea121105e07385 # v3.9.0
         with:
