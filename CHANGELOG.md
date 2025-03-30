@@ -1,5 +1,20 @@
 # Changelog
 
+<a id="v0.9.0"></a>
+## [v0.9.0](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.9.0) - 2025-03-30
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.9.0 -->
+
+## What's Changed
+### Changed
+* chore: relax version requirement for k8s-openapi by [@ThomasK33](https://github.com/ThomasK33) in [#32](https://github.com/ThomasK33/kube-quantity-rs/pull/32)
+
+
+**Full Changelog**: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.8.1...v0.9.0
+
+[Changes][v0.9.0]
+
+
 <a id="v0.8.1"></a>
 ## [v0.8.1](https://github.com/ThomasK33/kube-quantity-rs/releases/tag/v0.8.1) - 2025-03-01
 
@@ -189,6 +204,7 @@
 [Changes][v0.1.0]
 
 
+[v0.9.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.8.1...v0.9.0
 [v0.8.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.8.0...v0.8.1
 [v0.8.0]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.7.1...v0.8.0
 [v0.7.1]: https://github.com/ThomasK33/kube-quantity-rs/compare/v0.7.0...v0.7.1
