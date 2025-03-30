@@ -16,15 +16,13 @@ categories = ["algorithms", "data-structures", "encoding"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-k8s-openapi = { version = "0.24.0", default-features = false }
+k8s-openapi = { version = "0", default-features = false }
 nom = "8.0.0"
 rust_decimal = "1.37.1"
 thiserror = "2.0.12"
 
 [dev-dependencies]
-k8s-openapi = { version = "0.24.0", default-features = false, features = [
-  "latest",
-] }
+k8s-openapi = { version = "0", default-features = false, features = ["latest"] }
 
 [features]
 __check = ["k8s-openapi/latest"]
