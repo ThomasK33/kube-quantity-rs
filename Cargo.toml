@@ -18,7 +18,7 @@ categories = ["algorithms", "data-structures", "encoding"]
 [dependencies]
 k8s-openapi = { version = "0", default-features = false }
 nom = "8.0.0"
-rust_decimal = "1.37.2"
+rust_decimal = "1.38.0"
 thiserror = "2.0.12"
 
 [dev-dependencies]
