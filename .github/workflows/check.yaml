@@ -16,7 +16,7 @@ jobs:
           persist-credentials: false
       - uses: nixbuild/nix-quick-install-action@63ca48f939ee3b8d835f4126562537df0fee5b91 # v32
       - run: nix --version
-      - uses: nix-community/cache-nix-action@e2cf51da82e145785f5db595f553f7cbc2ca54df # v6
+      - uses: nix-community/cache-nix-action@3906749902b3a1fffe3610b90c0a6a17b9fec781 # v6
         with:
           # restore and save a cache using this key
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
